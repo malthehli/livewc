@@ -14,8 +14,8 @@ export interface LiveMatch {
 
 export async function getLiveWorldCupMatches(): Promise<LiveMatch[]> {
   try {
-    // Fetching live World Cup matches
-    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard', {
+    // Fetching ALL 104 live World Cup matches
+    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719&limit=200', {
       next: { revalidate: 15 } // revalidate every 15 seconds
     });
     
