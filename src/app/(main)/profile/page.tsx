@@ -7,19 +7,23 @@ import { motion } from "framer-motion";
 import { LogOut, Trophy, Activity, CalendarDays } from "lucide-react";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
-import { FIXTURES, getTeam } from "@/lib/data";
-import Image from "next/image";
+import { getLiveWorldCupMatches, LiveMatch } from "@/lib/api";
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const [predictions, setPredictions] = useState<Record<string, { home: string, away: string }>>({});
   const [nickname, setNickname] = useState<string>("");
+  const [matches, setMatches] = useState<LiveMatch[]>([]);
+  const [totalPoints, setTotalPoints] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
       try {
+        const liveMatches = await getLiveWorldCupMatches();
+        setMatches(liveMatches);
+
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
@@ -29,7 +33,26 @@ export default function ProfilePage() {
         const docRef = doc(db, "user_predictions", user.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          setPredictions(docSnap.data().matches || {});
+          const userPredictions = docSnap.data().matches || {};
+          setPredictions(userPredictions);
+
+          // Calculate total points
+          let calculatedPoints = 0;
+          liveMatches.forEach(liveMatch => {
+            const pred = userPredictions[liveMatch.id];
+            if (pred && liveMatch.status === 'STATUS_FINAL' && liveMatch.homeScore !== null && liveMatch.awayScore !== null) {
+              const predictedHome = parseInt(pred.home);
+              const predictedAway = parseInt(pred.away);
+
+              const exactScore = predictedHome === liveMatch.homeScore && predictedAway === liveMatch.awayScore;
+              const predictedOutcome = (predictedHome - predictedAway) > 0 ? 'home' : (predictedHome - predictedAway) < 0 ? 'away' : 'draw';
+              const actualOutcome = (liveMatch.homeScore - liveMatch.awayScore) > 0 ? 'home' : (liveMatch.homeScore - liveMatch.awayScore) < 0 ? 'away' : 'draw';
+
+              if (exactScore) calculatedPoints += 5;
+              else if (predictedOutcome === actualOutcome) calculatedPoints += 2;
+            }
+          });
+          setTotalPoints(calculatedPoints);
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
@@ -102,7 +125,7 @@ export default function ProfilePage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-500">
             <Trophy size={24} />
           </div>
-          <p className="mt-2 text-3xl font-black tracking-tighter text-zinc-900 dark:text-white">0</p>
+          <p className="mt-2 text-3xl font-black tracking-tighter text-zinc-900 dark:text-white">{totalPoints}</p>
           <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Total Points</p>
         </div>
       </div>
@@ -125,22 +148,31 @@ export default function ProfilePage() {
         ) : (
           <div className="flex flex-col gap-4">
             {predictedMatchIds.map((matchId) => {
-              const fixture = FIXTURES.find(f => f.id === matchId);
-              if (!fixture) return null;
+              const liveMatch = matches.find(m => m.id === matchId);
+              if (!liveMatch) return null;
               
-              const homeTeam = getTeam(fixture.homeTeamId);
-              const awayTeam = getTeam(fixture.awayTeamId);
               const pred = predictions[matchId];
 
-              if (!homeTeam || !awayTeam) return null;
+              let pointsEarned = 0;
+              let isFinished = liveMatch.status === 'STATUS_FINAL';
+              if (isFinished && liveMatch.homeScore !== null && liveMatch.awayScore !== null) {
+                const predictedHome = parseInt(pred.home);
+                const predictedAway = parseInt(pred.away);
+                const exactScore = predictedHome === liveMatch.homeScore && predictedAway === liveMatch.awayScore;
+                const predictedOutcome = (predictedHome - predictedAway) > 0 ? 'home' : (predictedHome - predictedAway) < 0 ? 'away' : 'draw';
+                const actualOutcome = (liveMatch.homeScore - liveMatch.awayScore) > 0 ? 'home' : (liveMatch.homeScore - liveMatch.awayScore) < 0 ? 'away' : 'draw';
+
+                if (exactScore) pointsEarned = 5;
+                else if (predictedOutcome === actualOutcome) pointsEarned = 2;
+              }
 
               return (
                 <div key={matchId} className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                   <div className="flex items-center gap-4">
-                    <div className="flex w-16 flex-col items-center gap-1">
+                    <div className="flex w-24 flex-col items-center gap-1">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={`https://flagcdn.com/w40/${homeTeam.iso2}.png`} alt={homeTeam.code} className="h-4 rounded shadow-sm" />
-                      <span className="text-[10px] font-black text-zinc-500">{homeTeam.code}</span>
+                      <img src={liveMatch.homeLogo} alt={liveMatch.homeTeam} className="h-8 w-8 object-contain" />
+                      <span className="text-center text-[10px] font-black text-zinc-500 line-clamp-1">{liveMatch.homeTeam}</span>
                     </div>
                     
                     <div className="flex items-center gap-3 rounded-xl bg-zinc-50 px-4 py-2 dark:bg-zinc-950">
@@ -149,16 +181,20 @@ export default function ProfilePage() {
                       <span className="text-xl font-black text-zinc-900 dark:text-white">{pred.away}</span>
                     </div>
 
-                    <div className="flex w-16 flex-col items-center gap-1">
+                    <div className="flex w-24 flex-col items-center gap-1">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={`https://flagcdn.com/w40/${awayTeam.iso2}.png`} alt={awayTeam.code} className="h-4 rounded shadow-sm" />
-                      <span className="text-[10px] font-black text-zinc-500">{awayTeam.code}</span>
+                      <img src={liveMatch.awayLogo} alt={liveMatch.awayTeam} className="h-8 w-8 object-contain" />
+                      <span className="text-center text-[10px] font-black text-zinc-500 line-clamp-1">{liveMatch.awayTeam}</span>
                     </div>
                   </div>
                   
-                  <div className="flex flex-col items-end">
-                    <span className="text-xs font-bold text-zinc-400">Pending</span>
-                    <span className="text-sm font-black text-zinc-300 dark:text-zinc-700">-- pts</span>
+                  <div className="flex flex-col items-end min-w-[80px]">
+                    <span className="text-xs font-bold text-zinc-400">
+                      {isFinished ? "Final" : "Pending"}
+                    </span>
+                    <span className={`text-sm font-black ${isFinished ? (pointsEarned > 0 ? 'text-green-500' : 'text-zinc-500') : 'text-zinc-300 dark:text-zinc-700'}`}>
+                      {isFinished ? `+${pointsEarned} pts` : '-- pts'}
+                    </span>
                   </div>
                 </div>
               );
