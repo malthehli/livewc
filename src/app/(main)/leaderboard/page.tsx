@@ -4,8 +4,7 @@ import { Trophy, TrendingUp, Minus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { FIXTURES } from "@/lib/data";
-import { calculateMatchPoints, MatchStage } from "@/lib/scoring";
+import { getChampionsLeagueFinal, LiveMatch } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 
 interface LeaderboardUser {
@@ -25,6 +24,8 @@ export default function LeaderboardPage() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
+        const liveMatch = await getChampionsLeagueFinal();
+
         const usersSnap = await getDocs(collection(db, "users"));
         const predictionsSnap = await getDocs(collection(db, "user_predictions"));
 
@@ -35,21 +36,27 @@ export default function LeaderboardPage() {
           let totalPoints = 0;
           const userPred = predictionsData.find(p => p.id === user.id);
           
-          if (userPred && (userPred as any).matches) {
-            FIXTURES.forEach(fixture => {
-              if (fixture.homeScore !== null && fixture.awayScore !== null) {
-                const pred = (userPred as any).matches[fixture.id];
-                if (pred && pred.home !== "" && pred.away !== "") {
-                  const stage = fixture.stage.toLowerCase() as MatchStage;
-                  const points = calculateMatchPoints(
-                    stage,
-                    { homeScore: fixture.homeScore, awayScore: fixture.awayScore, winnerId: null },
-                    { homeScore: parseInt(pred.home), awayScore: parseInt(pred.away), winnerId: null }
-                  );
-                  totalPoints += points;
-                }
+          if (userPred && (userPred as any).matches && liveMatch) {
+            const pred = (userPred as any).matches[liveMatch.id];
+            
+            // Only calculate points if match is final
+            if (pred && liveMatch.status === 'STATUS_FINAL' && liveMatch.homeScore !== null && liveMatch.awayScore !== null) {
+              const predictedHome = parseInt(pred.home);
+              const predictedAway = parseInt(pred.away);
+
+              const exactScore = predictedHome === liveMatch.homeScore && predictedAway === liveMatch.awayScore;
+              const predictedGoalDiff = predictedHome - predictedAway;
+              const actualGoalDiff = liveMatch.homeScore - liveMatch.awayScore;
+              
+              const predictedOutcome = predictedGoalDiff > 0 ? 'home' : predictedGoalDiff < 0 ? 'away' : 'draw';
+              const actualOutcome = actualGoalDiff > 0 ? 'home' : actualGoalDiff < 0 ? 'away' : 'draw';
+
+              if (exactScore) {
+                totalPoints += 5; // Exact score
+              } else if (predictedOutcome === actualOutcome) {
+                totalPoints += 2; // Correct outcome
               }
-            });
+            }
           }
 
           return {
@@ -85,7 +92,7 @@ export default function LeaderboardPage() {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-4 text-zinc-500">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent"></div>
-        <p>Calculating live leaderboard...</p>
+        <p>Calculating live leaderboard via ESPN API...</p>
       </div>
     );
   }
@@ -93,8 +100,8 @@ export default function LeaderboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-white">Leaderboard</h1>
-        <p className="mt-1 text-sm text-zinc-500">Compete against your friends.</p>
+        <h1 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-white">Live Leaderboard</h1>
+        <p className="mt-1 text-sm text-zinc-500">Rankings updated instantly via ESPN API.</p>
       </div>
 
       <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
