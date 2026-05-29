@@ -2,7 +2,7 @@ import { type NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 
 // Simple pass-through middleware - no Supabase required
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     return NextResponse.next()
 }
 

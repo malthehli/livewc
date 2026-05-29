@@ -98,7 +98,7 @@ export default function MatchesPage() {
           if (!homeTeam || !awayTeam) return null;
 
           const date = new Date(fixture.date);
-          const isLocked = date < new Date('2026-06-12T00:00:00Z'); // Mock lock logic
+          const isLocked = date < new Date(); // Actual lock logic
 
           return (
             <motion.div 
