@@ -4,7 +4,7 @@ import { Trophy, TrendingUp, Minus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { getLiveWorldCupMatch, LiveMatch } from "@/lib/api";
+import { getLiveWorldCupMatches, LiveMatch } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 
 interface LeaderboardUser {
@@ -24,7 +24,7 @@ export default function LeaderboardPage() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const liveMatch = await getLiveWorldCupMatch();
+        const liveMatches = await getLiveWorldCupMatches();
 
         const usersSnap = await getDocs(collection(db, "users"));
         const predictionsSnap = await getDocs(collection(db, "user_predictions"));
@@ -36,27 +36,29 @@ export default function LeaderboardPage() {
           let totalPoints = 0;
           const userPred = predictionsData.find(p => p.id === user.id);
           
-          if (userPred && (userPred as any).matches && liveMatch) {
-            const pred = (userPred as any).matches[liveMatch.id];
-            
-            // Only calculate points if match is final
-            if (pred && liveMatch.status === 'STATUS_FINAL' && liveMatch.homeScore !== null && liveMatch.awayScore !== null) {
-              const predictedHome = parseInt(pred.home);
-              const predictedAway = parseInt(pred.away);
-
-              const exactScore = predictedHome === liveMatch.homeScore && predictedAway === liveMatch.awayScore;
-              const predictedGoalDiff = predictedHome - predictedAway;
-              const actualGoalDiff = liveMatch.homeScore - liveMatch.awayScore;
+          if (userPred && (userPred as any).matches && liveMatches.length > 0) {
+            liveMatches.forEach(liveMatch => {
+              const pred = (userPred as any).matches[liveMatch.id];
               
-              const predictedOutcome = predictedGoalDiff > 0 ? 'home' : predictedGoalDiff < 0 ? 'away' : 'draw';
-              const actualOutcome = actualGoalDiff > 0 ? 'home' : actualGoalDiff < 0 ? 'away' : 'draw';
+              // Only calculate points if match is final
+              if (pred && liveMatch.status === 'STATUS_FINAL' && liveMatch.homeScore !== null && liveMatch.awayScore !== null) {
+                const predictedHome = parseInt(pred.home);
+                const predictedAway = parseInt(pred.away);
 
-              if (exactScore) {
-                totalPoints += 5; // Exact score
-              } else if (predictedOutcome === actualOutcome) {
-                totalPoints += 2; // Correct outcome
+                const exactScore = predictedHome === liveMatch.homeScore && predictedAway === liveMatch.awayScore;
+                const predictedGoalDiff = predictedHome - predictedAway;
+                const actualGoalDiff = liveMatch.homeScore - liveMatch.awayScore;
+                
+                const predictedOutcome = predictedGoalDiff > 0 ? 'home' : predictedGoalDiff < 0 ? 'away' : 'draw';
+                const actualOutcome = actualGoalDiff > 0 ? 'home' : actualGoalDiff < 0 ? 'away' : 'draw';
+
+                if (exactScore) {
+                  totalPoints += 5; // Exact score
+                } else if (predictedOutcome === actualOutcome) {
+                  totalPoints += 2; // Correct outcome
+                }
               }
-            }
+            });
           }
 
           return {

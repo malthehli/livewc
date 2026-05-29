@@ -4,54 +4,58 @@ import { Trophy, Activity, CalendarDays, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { getLiveWorldCupMatch, LiveMatch } from "@/lib/api";
+import { getLiveWorldCupMatches, LiveMatch } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [match, setMatch] = useState<LiveMatch | null>(null);
+  const [matches, setMatches] = useState<LiveMatch[]>([]);
   const [totalPoints, setTotalPoints] = useState(0);
-  const [prediction, setPrediction] = useState<{ home: string, away: string } | null>(null);
+  const [predictions, setPredictions] = useState<Record<string, { home: string, away: string }>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const liveMatch = await getLiveWorldCupMatch();
-        setMatch(liveMatch);
+        const liveMatches = await getLiveWorldCupMatches();
+        setMatches(liveMatches);
 
-        if (user && liveMatch) {
+        if (user && liveMatches.length > 0) {
           const docRef = doc(db, "user_predictions", user.uid);
           const docSnap = await getDoc(docRef);
+          
           if (docSnap.exists()) {
-            const matches = docSnap.data().matches;
-            if (matches && matches[liveMatch.id]) {
-              const pred = matches[liveMatch.id];
-              setPrediction(pred);
+            const userMatches = docSnap.data().matches;
+            if (userMatches) {
+              setPredictions(userMatches);
+              
+              let calculatedPoints = 0;
+              
+              // Calculate points across all matches that are final
+              liveMatches.forEach(liveMatch => {
+                const pred = userMatches[liveMatch.id];
+                if (pred && liveMatch.status === 'STATUS_FINAL' && liveMatch.homeScore !== null && liveMatch.awayScore !== null) {
+                  const predictedHome = parseInt(pred.home);
+                  const predictedAway = parseInt(pred.away);
 
-              // Calculate points if match is final
-              if (liveMatch.status === 'STATUS_FINAL' && liveMatch.homeScore !== null && liveMatch.awayScore !== null) {
-                const predictedHome = parseInt(pred.home);
-                const predictedAway = parseInt(pred.away);
+                  const exactScore = predictedHome === liveMatch.homeScore && predictedAway === liveMatch.awayScore;
+                  const predictedGoalDiff = predictedHome - predictedAway;
+                  const actualGoalDiff = liveMatch.homeScore - liveMatch.awayScore;
+                  
+                  const predictedOutcome = predictedGoalDiff > 0 ? 'home' : predictedGoalDiff < 0 ? 'away' : 'draw';
+                  const actualOutcome = actualGoalDiff > 0 ? 'home' : actualGoalDiff < 0 ? 'away' : 'draw';
 
-                let points = 0;
-                const exactScore = predictedHome === liveMatch.homeScore && predictedAway === liveMatch.awayScore;
-                const predictedGoalDiff = predictedHome - predictedAway;
-                const actualGoalDiff = liveMatch.homeScore - liveMatch.awayScore;
-                
-                const predictedOutcome = predictedGoalDiff > 0 ? 'home' : predictedGoalDiff < 0 ? 'away' : 'draw';
-                const actualOutcome = actualGoalDiff > 0 ? 'home' : actualGoalDiff < 0 ? 'away' : 'draw';
-
-                if (exactScore) {
-                  points = 5; // Example: 5 pts for exact score
-                } else if (predictedOutcome === actualOutcome) {
-                  points = 2; // Example: 2 pts for correct outcome
+                  if (exactScore) {
+                    calculatedPoints += 5; // Example: 5 pts for exact score
+                  } else if (predictedOutcome === actualOutcome) {
+                    calculatedPoints += 2; // Example: 2 pts for correct outcome
+                  }
                 }
+              });
 
-                setTotalPoints(points);
-              }
+              setTotalPoints(calculatedPoints);
             }
           }
         }
@@ -122,7 +126,7 @@ export default function Dashboard() {
               <CalendarDays size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-black tracking-tight text-zinc-900 dark:text-white">Live Match</h3>
+              <h3 className="text-lg font-black tracking-tight text-zinc-900 dark:text-white">Live Matches</h3>
               <p className="mt-1 text-xs font-medium text-zinc-500">Predict the World Cup</p>
             </div>
           </motion.div>
@@ -145,39 +149,61 @@ export default function Dashboard() {
       </div>
 
       {/* Recent Activity */}
-      {match && prediction && (
-        <div>
-          <h2 className="mb-4 text-xl font-black tracking-tight text-zinc-900 dark:text-white">Your Prediction</h2>
+      <div>
+        <h2 className="mb-4 text-xl font-black tracking-tight text-zinc-900 dark:text-white">Your Predictions</h2>
+        {matches.length === 0 ? (
+          <div className="text-zinc-500">No active matches found.</div>
+        ) : (
           <div className="flex flex-col gap-3">
-            <motion.div 
-              className="group flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-            >
-              <div className="flex items-center gap-4">
-                <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
-                  match.status === 'STATUS_FINAL' && totalPoints > 0 
-                  ? 'bg-green-100 text-green-600 dark:bg-green-900/30' 
-                  : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800'
-                }`}>
-                  <Trophy size={20} />
-                </div>
-                <div>
-                  <p className="font-black tracking-tight text-zinc-900 dark:text-white">
-                    {match.homeTeam} {prediction.home} - {prediction.away} {match.awayTeam}
+            {matches.map(match => {
+              const prediction = predictions[match.id];
+              if (!prediction) return null;
+
+              let pointsEarned = 0;
+              if (match.status === 'STATUS_FINAL' && match.homeScore !== null && match.awayScore !== null) {
+                const predictedHome = parseInt(prediction.home);
+                const predictedAway = parseInt(prediction.away);
+                const exactScore = predictedHome === match.homeScore && predictedAway === match.awayScore;
+                const predictedOutcome = (predictedHome - predictedAway) > 0 ? 'home' : (predictedHome - predictedAway) < 0 ? 'away' : 'draw';
+                const actualOutcome = (match.homeScore - match.awayScore) > 0 ? 'home' : (match.homeScore - match.awayScore) < 0 ? 'away' : 'draw';
+
+                if (exactScore) pointsEarned = 5;
+                else if (predictedOutcome === actualOutcome) pointsEarned = 2;
+              }
+
+              return (
+                <motion.div 
+                  key={match.id}
+                  className="group flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                      match.status === 'STATUS_FINAL' && pointsEarned > 0 
+                      ? 'bg-green-100 text-green-600 dark:bg-green-900/30' 
+                      : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800'
+                    }`}>
+                      <Trophy size={20} />
+                    </div>
+                    <div>
+                      <p className="font-black tracking-tight text-zinc-900 dark:text-white">
+                        {match.homeTeam} {prediction.home} - {prediction.away} {match.awayTeam}
+                      </p>
+                      <p className="text-xs font-medium text-zinc-500">
+                        {match.status === 'STATUS_FINAL' 
+                          ? (pointsEarned === 5 ? "Exact Scoreline!" : pointsEarned === 2 ? "Correct Outcome" : "Incorrect Prediction")
+                          : "Awaiting final result..."}
+                      </p>
+                    </div>
+                  </div>
+                  <p className={`text-lg font-black ${pointsEarned > 0 ? 'text-green-600 dark:text-green-500' : 'text-zinc-500'}`}>
+                    +{pointsEarned}
                   </p>
-                  <p className="text-xs font-medium text-zinc-500">
-                    {match.status === 'STATUS_FINAL' 
-                      ? (totalPoints === 5 ? "Exact Scoreline!" : totalPoints === 2 ? "Correct Outcome" : "Incorrect Prediction")
-                      : "Awaiting final result..."}
-                  </p>
-                </div>
-              </div>
-              <p className={`text-lg font-black ${totalPoints > 0 ? 'text-green-600 dark:text-green-500' : 'text-zinc-500'}`}>
-                +{totalPoints}
-              </p>
-            </motion.div>
+                </motion.div>
+              );
+            })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </motion.div>
   );
 }
