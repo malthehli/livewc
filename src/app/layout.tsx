@@ -8,8 +8,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export const metadata: Metadata = {
-  title: "liveWC — World Cup Prediction Game",
-  description: "The ultimate World Cup prediction game for friends and family.",
+  title: "Majlis prediction",
+  description: "The ultimate prediction game for friends and family.",
 };
 
 export default function RootLayout({

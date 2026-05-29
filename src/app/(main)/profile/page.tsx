@@ -13,24 +13,31 @@ import Image from "next/image";
 export default function ProfilePage() {
   const { user } = useAuth();
   const [predictions, setPredictions] = useState<Record<string, { home: string, away: string }>>({});
+  const [nickname, setNickname] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    const fetchData = async () => {
       if (!user) return;
       try {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          setNickname(userDocSnap.data().nickname || "");
+        }
+
         const docRef = doc(db, "user_predictions", user.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setPredictions(docSnap.data().matches || {});
         }
       } catch (error) {
-        console.error("Failed to fetch history:", error);
+        console.error("Failed to fetch data:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchHistory();
+    fetchData();
   }, [user]);
 
   const handleSignOut = async () => {
@@ -68,7 +75,7 @@ export default function ProfilePage() {
           </div>
           <div className="text-center sm:text-left">
             <h2 className="text-xl font-black tracking-tight text-zinc-900 dark:text-white">
-              {user.displayName || "World Cup Predictor"}
+              {nickname || user.displayName || "World Cup Predictor"}
             </h2>
             <p className="text-sm font-medium text-zinc-500">{user.email}</p>
           </div>

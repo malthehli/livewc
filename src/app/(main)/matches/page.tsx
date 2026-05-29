@@ -107,7 +107,7 @@ export default function MatchesPage() {
       className="flex flex-col gap-8"
     >
       <div>
-        <h1 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-white">World Cup Live Matches</h1>
+        <h1 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-white">Champions league Final</h1>
         <p className="mt-1 text-sm text-zinc-500">Predict the exact score before kickoff!</p>
       </div>
 

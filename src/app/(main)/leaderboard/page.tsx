@@ -63,7 +63,7 @@ export default function LeaderboardPage() {
 
           return {
             id: user.id,
-            name: (user as any).email?.split('@')[0] || "Unknown",
+            name: (user as any).nickname || (user as any).email?.split('@')[0] || "Unknown",
             points: totalPoints,
             trend: "same",
             isUser: currentUser?.uid === user.id

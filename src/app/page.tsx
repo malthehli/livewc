@@ -12,14 +12,16 @@ export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [nickname, setNickname] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const initUserDoc = async (uid: string, email: string | null) => {
+  const initUserDoc = async (uid: string, email: string | null, userNickname: string) => {
     const userRef = doc(db, 'users', uid);
     const snap = await getDoc(userRef);
     if (!snap.exists()) {
       await setDoc(userRef, {
         email,
+        nickname: userNickname || email?.split('@')[0] || "User",
         totalScore: 0,
         createdAt: new Date().toISOString()
       });
@@ -30,7 +32,7 @@ export default function LoginPage() {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      await initUserDoc(result.user.uid, result.user.email);
+      await initUserDoc(result.user.uid, result.user.email, result.user.displayName || "");
       toast.success("Successfully signed in with Google!");
     } catch (error: any) {
       toast.error("Google Sign In Failed", { description: error.message });
@@ -46,7 +48,7 @@ export default function LoginPage() {
         toast.success("Welcome back!");
       } else {
         const result = await createUserWithEmailAndPassword(auth, email, password);
-        await initUserDoc(result.user.uid, result.user.email);
+        await initUserDoc(result.user.uid, result.user.email, nickname);
         toast.success("Account created successfully!");
       }
     } catch (error: any) {
@@ -71,8 +73,8 @@ export default function LoginPage() {
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 shadow-lg shadow-orange-500/30">
             <Trophy size={32} className="text-white" />
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white">liveWC</h1>
-          <p className="mt-2 text-center text-sm font-medium text-zinc-500">Sign in to start making your World Cup predictions.</p>
+          <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white">Majlis prediction</h1>
+          <p className="mt-2 text-center text-sm font-medium text-zinc-500">Sign in to start making your predictions.</p>
         </div>
 
         <button 
@@ -94,6 +96,18 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleEmailAuth} className="flex flex-col gap-4">
+          {!isLogin && (
+            <div className="relative">
+              <input 
+                type="text" 
+                placeholder="Nickname" 
+                required
+                value={nickname}
+                onChange={e => setNickname(e.target.value)}
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-3 pl-4 pr-4 font-medium text-zinc-900 outline-none transition-all focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/20 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+              />
+            </div>
+          )}
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
             <input 
