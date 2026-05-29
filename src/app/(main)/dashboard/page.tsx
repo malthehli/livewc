@@ -4,7 +4,7 @@ import { Trophy, Activity, CalendarDays, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { getChampionsLeagueFinal, LiveMatch } from "@/lib/api";
+import { getLiveWorldCupMatch, LiveMatch } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -19,7 +19,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const liveMatch = await getChampionsLeagueFinal();
+        const liveMatch = await getLiveWorldCupMatch();
         setMatch(liveMatch);
 
         if (user && liveMatch) {
@@ -123,7 +123,7 @@ export default function Dashboard() {
             </div>
             <div>
               <h3 className="text-lg font-black tracking-tight text-zinc-900 dark:text-white">Live Match</h3>
-              <p className="mt-1 text-xs font-medium text-zinc-500">Predict the UCL Final</p>
+              <p className="mt-1 text-xs font-medium text-zinc-500">Predict the World Cup</p>
             </div>
           </motion.div>
         </Link>

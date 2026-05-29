@@ -12,10 +12,10 @@ export interface LiveMatch {
   awayLogo: string;
 }
 
-export async function getChampionsLeagueFinal(): Promise<LiveMatch | null> {
+export async function getLiveWorldCupMatch(): Promise<LiveMatch | null> {
   try {
-    // Fetching matches for May 30, 2026
-    const res = await fetch('http://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard?dates=20260530', {
+    // Fetching live World Cup matches
+    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard', {
       next: { revalidate: 15 } // revalidate every 15 seconds
     });
     

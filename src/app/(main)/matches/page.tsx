@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { db } from "@/lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useAuth } from "@/components/AuthProvider";
-import { getChampionsLeagueFinal, LiveMatch } from "@/lib/api";
+import { getLiveWorldCupMatch, LiveMatch } from "@/lib/api";
 
 export default function MatchesPage() {
   const { user } = useAuth();
@@ -19,7 +19,7 @@ export default function MatchesPage() {
   useEffect(() => {
     const fetchPredictionsAndMatch = async () => {
       try {
-        const liveMatch = await getChampionsLeagueFinal();
+        const liveMatch = await getLiveWorldCupMatch();
         setMatch(liveMatch);
 
         if (user) {
@@ -110,7 +110,7 @@ export default function MatchesPage() {
       className="flex flex-col gap-8"
     >
       <div>
-        <h1 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-white">Champions League Final</h1>
+        <h1 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-white">World Cup Live Match</h1>
         <p className="mt-1 text-sm text-zinc-500">Predict the exact score before kickoff!</p>
       </div>
 

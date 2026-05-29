@@ -4,7 +4,7 @@ import { Trophy, TrendingUp, Minus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { getChampionsLeagueFinal, LiveMatch } from "@/lib/api";
+import { getLiveWorldCupMatch, LiveMatch } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 
 interface LeaderboardUser {
@@ -24,7 +24,7 @@ export default function LeaderboardPage() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const liveMatch = await getChampionsLeagueFinal();
+        const liveMatch = await getLiveWorldCupMatch();
 
         const usersSnap = await getDocs(collection(db, "users"));
         const predictionsSnap = await getDocs(collection(db, "user_predictions"));
