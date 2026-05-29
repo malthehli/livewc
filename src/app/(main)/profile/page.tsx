@@ -149,9 +149,36 @@ export default function ProfilePage() {
           <div className="flex flex-col gap-4">
             {predictedMatchIds.map((matchId) => {
               const liveMatch = matches.find(m => m.id === matchId);
-              if (!liveMatch) return null;
-              
               const pred = predictions[matchId];
+
+              if (!liveMatch) {
+                return (
+                  <div key={matchId} className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 opacity-60">
+                    <div className="flex items-center gap-4">
+                      <div className="flex w-24 flex-col items-center gap-1">
+                        <div className="h-8 w-8 rounded-full bg-zinc-200 dark:bg-zinc-800"></div>
+                        <span className="text-center text-[10px] font-black text-zinc-500 line-clamp-1">Past Match</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 rounded-xl bg-zinc-50 px-4 py-2 dark:bg-zinc-950">
+                        <span className="text-xl font-black text-zinc-900 dark:text-white">{pred.home}</span>
+                        <span className="text-sm font-black text-zinc-300 dark:text-zinc-700">-</span>
+                        <span className="text-xl font-black text-zinc-900 dark:text-white">{pred.away}</span>
+                      </div>
+
+                      <div className="flex w-24 flex-col items-center gap-1">
+                        <div className="h-8 w-8 rounded-full bg-zinc-200 dark:bg-zinc-800"></div>
+                        <span className="text-center text-[10px] font-black text-zinc-500 line-clamp-1">Past Match</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col items-end min-w-[80px]">
+                      <span className="text-xs font-bold text-zinc-400">Archived</span>
+                      <span className="text-sm font-black text-zinc-300 dark:text-zinc-700">-- pts</span>
+                    </div>
+                  </div>
+                );
+              }
 
               let pointsEarned = 0;
               let isFinished = liveMatch.status === 'STATUS_FINAL';
