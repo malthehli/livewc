@@ -1,0 +1,3 @@
+@echo off
+echo Starting World Cup Prediction App...
+"C:\Program Files\nodejs\npm.cmd" run dev
