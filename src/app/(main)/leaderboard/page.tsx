@@ -50,7 +50,9 @@ export default function LeaderboardPage() {
                 const actualGoalDiff = liveMatch.homeScore - liveMatch.awayScore;
                 
                 const predictedOutcome = predictedGoalDiff > 0 ? 'home' : predictedGoalDiff < 0 ? 'away' : 'draw';
-                const actualOutcome = actualGoalDiff > 0 ? 'home' : actualGoalDiff < 0 ? 'away' : 'draw';
+                let actualOutcome = actualGoalDiff > 0 ? 'home' : actualGoalDiff < 0 ? 'away' : 'draw';
+                if (liveMatch.homeWinner) actualOutcome = 'home';
+                else if (liveMatch.awayWinner) actualOutcome = 'away';
 
                 if (exactScore) {
                   totalPoints += 5; // Exact score

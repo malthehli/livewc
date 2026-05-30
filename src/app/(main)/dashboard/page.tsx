@@ -45,7 +45,9 @@ export default function Dashboard() {
                   const actualGoalDiff = liveMatch.homeScore - liveMatch.awayScore;
                   
                   const predictedOutcome = predictedGoalDiff > 0 ? 'home' : predictedGoalDiff < 0 ? 'away' : 'draw';
-                  const actualOutcome = actualGoalDiff > 0 ? 'home' : actualGoalDiff < 0 ? 'away' : 'draw';
+                  let actualOutcome = actualGoalDiff > 0 ? 'home' : actualGoalDiff < 0 ? 'away' : 'draw';
+                  if (liveMatch.homeWinner) actualOutcome = 'home';
+                  else if (liveMatch.awayWinner) actualOutcome = 'away';
 
                   if (exactScore) {
                     calculatedPoints += 5; // Example: 5 pts for exact score
@@ -165,7 +167,9 @@ export default function Dashboard() {
                 const predictedAway = parseInt(prediction.away);
                 const exactScore = predictedHome === match.homeScore && predictedAway === match.awayScore;
                 const predictedOutcome = (predictedHome - predictedAway) > 0 ? 'home' : (predictedHome - predictedAway) < 0 ? 'away' : 'draw';
-                const actualOutcome = (match.homeScore - match.awayScore) > 0 ? 'home' : (match.homeScore - match.awayScore) < 0 ? 'away' : 'draw';
+                let actualOutcome = (match.homeScore - match.awayScore) > 0 ? 'home' : (match.homeScore - match.awayScore) < 0 ? 'away' : 'draw';
+                if (match.homeWinner) actualOutcome = 'home';
+                else if (match.awayWinner) actualOutcome = 'away';
 
                 if (exactScore) pointsEarned = 5;
                 else if (predictedOutcome === actualOutcome) pointsEarned = 2;

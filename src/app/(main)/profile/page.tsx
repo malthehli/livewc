@@ -46,7 +46,9 @@ export default function ProfilePage() {
 
               const exactScore = predictedHome === liveMatch.homeScore && predictedAway === liveMatch.awayScore;
               const predictedOutcome = (predictedHome - predictedAway) > 0 ? 'home' : (predictedHome - predictedAway) < 0 ? 'away' : 'draw';
-              const actualOutcome = (liveMatch.homeScore - liveMatch.awayScore) > 0 ? 'home' : (liveMatch.homeScore - liveMatch.awayScore) < 0 ? 'away' : 'draw';
+              let actualOutcome = (liveMatch.homeScore - liveMatch.awayScore) > 0 ? 'home' : (liveMatch.homeScore - liveMatch.awayScore) < 0 ? 'away' : 'draw';
+              if (liveMatch.homeWinner) actualOutcome = 'home';
+              else if (liveMatch.awayWinner) actualOutcome = 'away';
 
               if (exactScore) calculatedPoints += 5;
               else if (predictedOutcome === actualOutcome) calculatedPoints += 2;
@@ -187,7 +189,9 @@ export default function ProfilePage() {
                 const predictedAway = parseInt(pred.away);
                 const exactScore = predictedHome === liveMatch.homeScore && predictedAway === liveMatch.awayScore;
                 const predictedOutcome = (predictedHome - predictedAway) > 0 ? 'home' : (predictedHome - predictedAway) < 0 ? 'away' : 'draw';
-                const actualOutcome = (liveMatch.homeScore - liveMatch.awayScore) > 0 ? 'home' : (liveMatch.homeScore - liveMatch.awayScore) < 0 ? 'away' : 'draw';
+                let actualOutcome = (liveMatch.homeScore - liveMatch.awayScore) > 0 ? 'home' : (liveMatch.homeScore - liveMatch.awayScore) < 0 ? 'away' : 'draw';
+                if (liveMatch.homeWinner) actualOutcome = 'home';
+                else if (liveMatch.awayWinner) actualOutcome = 'away';
 
                 if (exactScore) pointsEarned = 5;
                 else if (predictedOutcome === actualOutcome) pointsEarned = 2;

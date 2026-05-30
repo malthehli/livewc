@@ -10,6 +10,8 @@ export interface LiveMatch {
   awayScore: number | null;
   homeLogo: string;
   awayLogo: string;
+  homeWinner?: boolean;
+  awayWinner?: boolean;
 }
 
 export async function getLiveWorldCupMatches(): Promise<LiveMatch[]> {
@@ -33,13 +35,15 @@ export async function getLiveWorldCupMatches(): Promise<LiveMatch[]> {
       return {
         id: event.id,
         date: event.date,
-        status: event.status.type.name,
+        status: event.status.type.name.startsWith('STATUS_FINAL') ? 'STATUS_FINAL' : event.status.type.name,
         homeTeam: home.team.displayName,
         awayTeam: away.team.displayName,
         homeScore: parseInt(home.score) >= 0 ? parseInt(home.score) : null,
         awayScore: parseInt(away.score) >= 0 ? parseInt(away.score) : null,
         homeLogo: home.team.logo,
         awayLogo: away.team.logo,
+        homeWinner: home.winner,
+        awayWinner: away.winner,
       };
     });
   } catch (error) {
